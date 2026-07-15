@@ -23,15 +23,16 @@ model Tenant {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   @default("OWNER") // SUPER_ADMIN, OWNER, SECRETARY
-  tenantId  String?  // Nullable for Super Admins
-  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  plainPassword String?  // Campo para almacenar la contraseña en texto claro (para vista del admin en la demo)
+  name          String
+  role          String   @default("OWNER") // SUPER_ADMIN, OWNER, SECRETARY
+  tenantId      String?  // Nullable for Super Admins
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("users")
 }

@@ -217,7 +217,7 @@ export default function Login() {
                     required
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    className="w-full pl-10 glass-input text-sm"
+                    className="w-full pl-10 py-3 pr-4 glass-input text-sm"
                     placeholder="ejemplo@instituto.edu"
                   />
                 </div>
@@ -234,7 +234,7 @@ export default function Login() {
                     required
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    className="w-full pl-10 glass-input text-sm"
+                    className="w-full pl-10 py-3 pr-4 glass-input text-sm"
                     placeholder="••••••••"
                   />
                 </div>
@@ -246,7 +246,7 @@ export default function Login() {
                 className="gsap-fade-in w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/20 active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer mt-4"
               >
                 {loading ? 'Accediendo...' : 'Ingresar'}
-                {!loading && <LogIn className="h-4 w-4" />}
+                {!loading && <ArrowRight className="h-4 w-4" />}
               </button>
             </form>
           ) : (
@@ -263,7 +263,7 @@ export default function Login() {
                     required
                     value={tenantName}
                     onChange={(e) => setTenantName(e.target.value)}
-                    className="w-full pl-10 glass-input text-sm"
+                    className="w-full pl-10 py-3 pr-4 glass-input text-sm"
                     placeholder="Ej. Instituto Oxford"
                   />
                 </div>
@@ -280,7 +280,7 @@ export default function Login() {
                     required
                     value={ownerName}
                     onChange={(e) => setOwnerName(e.target.value)}
-                    className="w-full pl-10 glass-input text-sm"
+                    className="w-full pl-10 py-3 pr-4 glass-input text-sm"
                     placeholder="Ej. Juan Pérez"
                   />
                 </div>
@@ -297,7 +297,7 @@ export default function Login() {
                     required
                     value={registerEmail}
                     onChange={(e) => setRegisterEmail(e.target.value)}
-                    className="w-full pl-10 glass-input text-sm"
+                    className="w-full pl-10 py-3 pr-4 glass-input text-sm"
                     placeholder="admin@oxford.edu"
                   />
                 </div>
@@ -314,7 +314,7 @@ export default function Login() {
                     required
                     value={registerPassword}
                     onChange={(e) => setRegisterPassword(e.target.value)}
-                    className="w-full pl-10 glass-input text-sm"
+                    className="w-full pl-10 py-3 pr-4 glass-input text-sm"
                     placeholder="Mínimo 6 caracteres"
                   />
                 </div>
@@ -325,7 +325,7 @@ export default function Login() {
                 <select
                   value={selectedPlan}
                   onChange={(e) => setSelectedPlan(e.target.value)}
-                  className="w-full glass-input text-sm text-gray-300 focus:bg-gray-900 cursor-pointer"
+                  className="w-full px-4 py-3 glass-input text-sm text-gray-300 focus:bg-gray-900 cursor-pointer"
                 >
                   {plans.map((p) => (
                     <option key={p.id} value={p.id} className="bg-gray-900 text-gray-300">

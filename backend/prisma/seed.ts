@@ -95,6 +95,7 @@ async function main() {
     data: {
       email: 'owner@oxford.edu.bo',
       password: ownerPassword,
+      plainPassword: 'OwnerSecurePass123!',
       name: 'Lic. Juan Pérez',
       role: 'OWNER',
       tenantId: tenantDemo.id,

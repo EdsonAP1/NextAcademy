@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Res, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Get, Res, Req, UseGuards, HttpCode, HttpStatus, ForbiddenException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
 import type { Response, Request } from 'express';
@@ -63,5 +63,75 @@ export class AuthController {
   async me(@Req() req: Request) {
     const userPayload = (req as any).user;
     return this.authService.getProfile(userPayload.sub);
+  }
+
+  @Post('update-tenant-user')
+  @UseGuards(AuthGuard)
+  async updateTenantUser(
+    @Req() req: Request,
+    @Body() body: { tenantSlug: string; email: string; pass: string; name?: string; status?: string; planId?: string; endDate?: string },
+  ) {
+    const userPayload = (req as any).user;
+    if (userPayload.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Solo el super administrador puede realizar esta acción');
+    }
+    return this.authService.updateTenantUser(
+      body.tenantSlug,
+      body.email,
+      body.pass,
+      body.name,
+      body.status,
+      body.planId,
+      body.endDate,
+    );
+  }
+
+  @Get('admin/tenants')
+  @UseGuards(AuthGuard)
+  async getTenants(@Req() req: Request) {
+    const userPayload = (req as any).user;
+    if (userPayload.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Solo el super administrador puede realizar esta acción');
+    }
+    return this.authService.getTenants();
+  }
+
+  @Post('admin/tenants')
+  @UseGuards(AuthGuard)
+  async createTenant(
+    @Req() req: Request,
+    @Body() body: { name: string; ownerName: string; ownerEmail: string; pass: string; planId: string; endDate: string },
+  ) {
+    const userPayload = (req as any).user;
+    if (userPayload.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Solo el super administrador puede realizar esta acción');
+    }
+    return this.authService.createTenant(body);
+  }
+
+  @Post('admin/tenants/extend')
+  @UseGuards(AuthGuard)
+  async extendTenant(
+    @Req() req: Request,
+    @Body() body: { tenantId: string; days: number },
+  ) {
+    const userPayload = (req as any).user;
+    if (userPayload.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Solo el super administrador puede realizar esta acción');
+    }
+    return this.authService.extendTenantSubscription(body.tenantId, body.days);
+  }
+
+  @Post('admin/tenants/delete')
+  @UseGuards(AuthGuard)
+  async deleteTenant(
+    @Req() req: Request,
+    @Body() body: { tenantId: string },
+  ) {
+    const userPayload = (req as any).user;
+    if (userPayload.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Solo el super administrador puede realizar esta acción');
+    }
+    return this.authService.deleteTenant(body.tenantId);
   }
 }
