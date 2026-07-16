@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -55,19 +59,29 @@ export class AuthService {
         name: user.name,
         role: user.role,
         tenantId: user.tenantId,
-        tenant: user.tenant ? {
-          id: user.tenant.id,
-          name: user.tenant.name,
-          slug: user.tenant.slug,
-          subscription: user.tenant.subscriptions[0] || null,
-        } : null,
+        tenant: user.tenant
+          ? {
+              id: user.tenant.id,
+              name: user.tenant.name,
+              slug: user.tenant.slug,
+              subscription: user.tenant.subscriptions[0] || null,
+            }
+          : null,
       },
     };
   }
 
-  async register(tenantName: string, name: string, email: string, pass: string, planId?: string) {
+  async register(
+    tenantName: string,
+    name: string,
+    email: string,
+    pass: string,
+    planId?: string,
+  ) {
     // 1. Validar correo único
-    const existingUser = await this.prisma.user.findUnique({ where: { email } });
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
     if (existingUser) {
       throw new BadRequestException('El correo ya está registrado');
     }
@@ -80,7 +94,9 @@ export class AuthService {
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-    const existingTenant = await this.prisma.tenant.findUnique({ where: { slug } });
+    const existingTenant = await this.prisma.tenant.findUnique({
+      where: { slug },
+    });
     if (existingTenant) {
       throw new BadRequestException('El nombre del instituto ya está en uso');
     }
@@ -192,12 +208,14 @@ export class AuthService {
       name: user.name,
       role: user.role,
       tenantId: user.tenantId,
-      tenant: user.tenant ? {
-        id: user.tenant.id,
-        name: user.tenant.name,
-        slug: user.tenant.slug,
-        subscription: user.tenant.subscriptions[0] || null,
-      } : null,
+      tenant: user.tenant
+        ? {
+            id: user.tenant.id,
+            name: user.tenant.name,
+            slug: user.tenant.slug,
+            subscription: user.tenant.subscriptions[0] || null,
+          }
+        : null,
     };
   }
 
@@ -231,7 +249,9 @@ export class AuthService {
         where: { email, NOT: { id: owner.id } },
       });
       if (existingUser) {
-        throw new BadRequestException('El correo ya está en uso por otro usuario');
+        throw new BadRequestException(
+          'El correo ya está en uso por otro usuario',
+        );
       }
       updateData.email = email;
     }
@@ -276,7 +296,10 @@ export class AuthService {
       }
     }
 
-    return { message: 'Instituto y credenciales del propietario actualizados correctamente' };
+    return {
+      message:
+        'Instituto y credenciales del propietario actualizados correctamente',
+    };
   }
 
   async getTenants() {
@@ -292,10 +315,21 @@ export class AuthService {
     });
   }
 
-  async createTenant(data: { name: string; ownerName: string; ownerEmail: string; pass: string; planId: string; endDate: string }) {
-    const existingUser = await this.prisma.user.findUnique({ where: { email: data.ownerEmail } });
+  async createTenant(data: {
+    name: string;
+    ownerName: string;
+    ownerEmail: string;
+    pass: string;
+    planId: string;
+    endDate: string;
+  }) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: data.ownerEmail },
+    });
     if (existingUser) {
-      throw new BadRequestException('El correo del propietario ya está registrado');
+      throw new BadRequestException(
+        'El correo del propietario ya está registrado',
+      );
     }
 
     const slug = data.name
@@ -305,13 +339,15 @@ export class AuthService {
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-    const existingTenant = await this.prisma.tenant.findUnique({ where: { slug } });
+    const existingTenant = await this.prisma.tenant.findUnique({
+      where: { slug },
+    });
     if (existingTenant) {
       throw new BadRequestException('El nombre del instituto ya está en uso');
     }
 
     const plan = await this.prisma.plan.findUnique({
-      where: { id: data.planId }
+      where: { id: data.planId },
     });
     if (!plan) {
       throw new BadRequestException('Plan de suscripción no encontrado');
@@ -351,7 +387,7 @@ export class AuthService {
   async extendTenantSubscription(tenantId: string, days: number) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      include: { subscriptions: { orderBy: { endDate: 'desc' } } }
+      include: { subscriptions: { orderBy: { endDate: 'desc' } } },
     });
 
     if (!tenant) {
@@ -360,7 +396,9 @@ export class AuthService {
 
     const sub = tenant.subscriptions[0];
     if (!sub) {
-      throw new BadRequestException('El instituto no tiene una suscripción asignada');
+      throw new BadRequestException(
+        'El instituto no tiene una suscripción asignada',
+      );
     }
 
     const currentEnd = new Date(sub.endDate);
@@ -372,12 +410,12 @@ export class AuthService {
       data: {
         endDate: newEnd,
         status: 'ACTIVE',
-      }
+      },
     });
 
     await this.prisma.tenant.update({
       where: { id: tenantId },
-      data: { status: 'ACTIVE' }
+      data: { status: 'ACTIVE' },
     });
 
     return { message: 'Suscripción extendida exitosamente' };
@@ -385,7 +423,7 @@ export class AuthService {
 
   async deleteTenant(tenantId: string) {
     await this.prisma.tenant.delete({
-      where: { id: tenantId }
+      where: { id: tenantId },
     });
     return { message: 'Instituto eliminado correctamente' };
   }

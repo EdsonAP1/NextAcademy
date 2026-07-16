@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, Plus, Trash2, Edit, Save, QrCode, X } from 'lucide-react';
+import { CreditCard, Plus, Trash2, Edit, QrCode, X } from 'lucide-react';
 import gsap from 'gsap';
 
 interface BankAccount {
@@ -16,8 +16,15 @@ export default function SuperAdminQR() {
   });
 
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(() => {
-    const saved = localStorage.getItem('saas_bank_accounts');
-    if (saved) return JSON.parse(saved);
+    try {
+      const saved = localStorage.getItem('saas_bank_accounts');
+      if (saved && saved !== 'undefined' && saved !== 'null') {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Error parsing bank accounts', e);
+    }
     return [
       { id: '1', bankName: 'Banco Nacional de Bolivia (BNB)', accountNumber: '100-2938481', ownerName: 'NextAcademy SRL', nitCi: '3029482029' },
       { id: '2', bankName: 'Banco Mercantil Santa Cruz', accountNumber: '401-29481920', ownerName: 'NextAcademy SRL', nitCi: '3029482029' },

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Settings as SettingsIcon, Building2, CreditCard, Users, ShieldAlert, CheckCircle2, Plus, Edit, Trash2, X } from 'lucide-react';
+import { Settings as SettingsIcon, CreditCard, Users, ShieldAlert, CheckCircle2, Plus, Edit, Trash2, X } from 'lucide-react';
 import gsap from 'gsap';
 
 interface UserProfile {
@@ -13,13 +13,6 @@ interface UserProfile {
   };
 }
 
-interface Branch {
-  id: number;
-  name: string;
-  address: string;
-  status: string;
-}
-
 interface UserItem {
   id: number;
   name: string;
@@ -28,19 +21,11 @@ interface UserItem {
 }
 
 export default function Settings() {
-  const { profile } = useOutletContext<{ profile: any }>();
+  const { profile } = useOutletContext<{ profile: UserProfile }>();
   const isDemo = profile?.tenant?.slug === 'oxford';
-  const [activeTab, setActiveTab] = useState('branches');
+  const [activeTab, setActiveTab] = useState('users');
 
   // Stateful Mock Data
-  const [branches, setBranches] = useState<Branch[]>(() => {
-    if (!isDemo) return [];
-    return [
-      { id: 1, name: 'Sede Central - Sopocachi', address: 'Av. 20 de Octubre #1234', status: 'Activa' },
-      { id: 2, name: 'Sucursal Sur - Calacoto', address: 'Av. Ballivián #5678', status: 'Activa' },
-    ];
-  });
-
   const [users, setUsers] = useState<UserItem[]>(() => {
     if (!isDemo) return [];
     return [
@@ -48,13 +33,6 @@ export default function Settings() {
       { id: 2, name: 'Ana Fernández', role: 'Secretaria (Central)', email: 'ana@instituto.edu' },
     ];
   });
-
-  // Modal states
-  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
-  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
-  const [branchName, setBranchName] = useState('');
-  const [branchAddress, setBranchAddress] = useState('');
-  const [branchStatus, setBranchStatus] = useState('Activa');
 
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
@@ -68,51 +46,7 @@ export default function Settings() {
       { opacity: 0, y: 15 },
       { opacity: 1, y: 0, duration: 0.4, stagger: 0.1, ease: 'power2.out' }
     );
-  }, [activeTab, branches, users]);
-
-  // Branch CRUD
-  const handleDeleteBranch = (id: number) => {
-    if (confirm('¿Estás seguro de que deseas eliminar esta sucursal?')) {
-      setBranches(prev => prev.filter(b => b.id !== id));
-    }
-  };
-
-  const handleOpenAddBranch = () => {
-    setEditingBranch(null);
-    setBranchName('');
-    setBranchAddress('');
-    setBranchStatus('Activa');
-    setIsBranchModalOpen(true);
-  };
-
-  const handleOpenEditBranch = (branch: Branch) => {
-    setEditingBranch(branch);
-    setBranchName(branch.name);
-    setBranchAddress(branch.address);
-    setBranchStatus(branch.status);
-    setIsBranchModalOpen(true);
-  };
-
-  const handleBranchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingBranch) {
-      setBranches(prev => prev.map(b => b.id === editingBranch.id ? {
-        ...b,
-        name: branchName,
-        address: branchAddress,
-        status: branchStatus
-      } : b));
-    } else {
-      const newBranch = {
-        id: Date.now(),
-        name: branchName,
-        address: branchAddress,
-        status: branchStatus
-      };
-      setBranches(prev => [...prev, newBranch]);
-    }
-    setIsBranchModalOpen(false);
-  };
+  }, [activeTab, users]);
 
   // User CRUD
   const handleDeleteUser = (id: number) => {
@@ -165,21 +99,12 @@ export default function Settings() {
           <SettingsIcon className="h-6 w-6 text-indigo-400" />
           Configuración del Instituto
         </h2>
-        <p className="text-sm text-gray-400 mt-1">Administra sucursales, personal y suscripción de {profile?.tenant?.name}.</p>
+        <p className="text-sm text-gray-400 mt-1">Administra el personal y la suscripción de {profile?.tenant?.name}.</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar Settings */}
         <div className="w-full md:w-64 flex flex-col gap-2 shrink-0">
-          <button 
-            onClick={() => setActiveTab('branches')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm cursor-pointer ${
-              activeTab === 'branches' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:bg-gray-900/80 hover:text-gray-200'
-            }`}
-          >
-            <Building2 className="h-5 w-5" />
-            Sucursales
-          </button>
           <button 
             onClick={() => setActiveTab('users')}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm cursor-pointer ${
@@ -202,57 +127,6 @@ export default function Settings() {
 
         {/* Content Settings */}
         <div className="flex-1">
-          {activeTab === 'branches' && (
-            <div className="gsap-settings-card glass-panel rounded-3xl p-6 md:p-8">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h3 className="text-lg font-bold text-white">Gestión de Sucursales</h3>
-                  <p className="text-xs text-gray-400 mt-1">Administra las ubicaciones físicas de tu instituto.</p>
-                </div>
-                <button 
-                  onClick={handleOpenAddBranch}
-                  className="p-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition-colors border border-indigo-500/20 cursor-pointer"
-                >
-                  <Plus className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {branches.map(b => (
-                  <div key={b.id} className="p-4 rounded-2xl bg-gray-900/50 border border-gray-800 flex justify-between items-center group hover:border-gray-700 transition-colors">
-                    <div>
-                      <h4 className="font-bold text-gray-200">{b.name}</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">{b.address}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        b.status === 'Activa' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                      }`}>
-                        {b.status}
-                      </span>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleOpenEditBranch(b)}
-                          className="p-1.5 text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteBranch(b.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {branches.length === 0 && (
-                  <div className="text-center py-6 text-gray-500 text-sm">No hay sucursales configuradas.</div>
-                )}
-              </div>
-            </div>
-          )}
 
           {activeTab === 'users' && (
             <div className="gsap-settings-card glass-panel rounded-3xl p-6 md:p-8">
@@ -277,8 +151,8 @@ export default function Settings() {
                         {u.name.charAt(0)}
                       </div>
                       <div>
-                        <h4 className="font-bold text-gray-200">{u.name}</h4>
-                        <p className="text-xs text-gray-500 mt-0.5">{u.email}</p>
+                        <h4 className="font-bold text-gray-200">{u.name.toUpperCase()}</h4>
+                        <p className="text-xs text-gray-500 mt-0.5">{u.email.toLowerCase()}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -401,78 +275,6 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Modal - Branch CRUD */}
-      {isBranchModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="glass-panel w-full max-w-md rounded-3xl p-6 relative">
-            <button 
-              onClick={() => setIsBranchModalOpen(false)}
-              className="absolute right-4 top-4 p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all cursor-pointer"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <h3 className="text-xl font-bold text-white mb-6">
-              {editingBranch ? 'Editar Sucursal' : 'Nueva Sucursal'}
-            </h3>
-
-            <form onSubmit={handleBranchSubmit} className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-gray-400 block mb-1.5">Nombre de la Sucursal</label>
-                <input 
-                  type="text" 
-                  required
-                  value={branchName}
-                  onChange={(e) => setBranchName(e.target.value)}
-                  placeholder="Ej. Sede Central - Sopocachi"
-                  className="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500/50"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-gray-400 block mb-1.5">Dirección</label>
-                <input 
-                  type="text" 
-                  required
-                  value={branchAddress}
-                  onChange={(e) => setBranchAddress(e.target.value)}
-                  placeholder="Ej. Av. 20 de Octubre #1234"
-                  className="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500/50"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-gray-400 block mb-1.5">Estado</label>
-                <select 
-                  value={branchStatus}
-                  onChange={(e) => setBranchStatus(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-800 rounded-xl text-sm text-gray-300 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
-                >
-                  <option value="Activa" className="bg-gray-900 text-white">Activa</option>
-                  <option value="Inactiva" className="bg-gray-900 text-white">Inactiva</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button 
-                  type="button"
-                  onClick={() => setIsBranchModalOpen(false)}
-                  className="flex-1 py-2.5 border border-gray-800 hover:bg-gray-800 text-gray-400 hover:text-white rounded-xl text-sm font-semibold transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit"
-                  className="flex-1 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-500/20 transition-colors cursor-pointer"
-                >
-                  {editingBranch ? 'Guardar' : 'Crear'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Modal - User CRUD */}
       {isUserModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -495,7 +297,7 @@ export default function Settings() {
                   type="text" 
                   required
                   value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
+                  onChange={(e) => setUserName(e.target.value.toUpperCase())}
                   placeholder="Ej. Ana Fernández"
                   className="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500/50"
                 />
@@ -507,7 +309,7 @@ export default function Settings() {
                   type="email" 
                   required
                   value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
+                  onChange={(e) => setUserEmail(e.target.value.toLowerCase())}
                   placeholder="ejemplo@instituto.edu"
                   className="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500/50"
                 />

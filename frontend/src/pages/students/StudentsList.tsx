@@ -2,34 +2,53 @@ import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Search, Plus, MoreVertical, GraduationCap, Edit, Trash2, X } from 'lucide-react';
 import gsap from 'gsap';
+import api from '../../shared/api';
 
 interface Student {
-  id: number;
+  id: string;
   name: string;
   email: string;
   phone: string;
   status: string;
-  courses: number;
-  joined: string;
+  courses?: number;
+  joined?: string;
+  enrollments?: any[];
 }
 
 export default function StudentsList() {
   const { profile } = useOutletContext<{ profile: any }>();
-  const isDemo = profile?.tenant?.slug === 'oxford';
-
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Stateful Mock Data
-  const [students, setStudents] = useState<Student[]>(() => {
-    if (!isDemo) return [];
-    return [
-      { id: 1, name: 'Juan Carlos Pérez', email: 'juan.perez@email.com', phone: '78945612', status: 'Activo', courses: 2, joined: '2023-10-15' },
-      { id: 2, name: 'María Gómez', email: 'maria.g@email.com', phone: '74125896', status: 'Activo', courses: 1, joined: '2023-11-01' },
-      { id: 3, name: 'Carlos Ruiz', email: 'carlos.r@email.com', phone: '75395148', status: 'Inactivo', courses: 0, joined: '2023-08-20' },
-      { id: 4, name: 'Ana Fernández', email: 'ana.f@email.com', phone: '72589634', status: 'Activo', courses: 3, joined: '2024-01-10' },
-      { id: 5, name: 'Luis Fernando Choque', email: 'luis.choque@email.com', phone: '71548625', status: 'Pendiente', courses: 1, joined: '2024-02-05' },
-    ];
-  });
+  const tenantSlug = profile?.tenant?.slug || 'oxford';
+  const activeBranch = localStorage.getItem(`${tenantSlug}_academy_active_branch`) || 'principal';
+
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/students?branchId=${activeBranch}`);
+      // Map database student schema to UI structure
+      const mapped = res.data.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        email: s.email,
+        phone: s.phone,
+        status: s.status === 'ACTIVE' ? 'Activo' : s.status === 'INACTIVE' ? 'Inactivo' : 'Pendiente',
+        courses: s.enrollments?.length || 0,
+        joined: s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : '',
+      }));
+      setStudents(mapped);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, [activeBranch]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,9 +68,14 @@ export default function StudentsList() {
     );
   }, [students]);
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: string) => {
     if (confirm('¿Estás seguro de que deseas eliminar a este estudiante?')) {
-      setStudents(prev => prev.filter(s => s.id !== id));
+      try {
+        await api.delete(`/students/${id}`);
+        fetchStudents();
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
@@ -73,31 +97,34 @@ export default function StudentsList() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingStudent) {
-      // Edit mode
-      setStudents(prev => prev.map(s => s.id === editingStudent.id ? {
-        ...s,
-        name,
-        email,
-        phone,
-        status,
-      } : s));
-    } else {
-      // Add mode
-      const newStudent: Student = {
-        id: Date.now(),
-        name,
-        email,
-        phone,
-        status,
-        courses: 0,
-        joined: new Date().toISOString().split('T')[0]
-      };
-      setStudents(prev => [newStudent, ...prev]);
+    const payload = {
+      name,
+      email,
+      phone,
+      status: status === 'Activo' ? 'ACTIVE' : status === 'Inactivo' ? 'INACTIVE' : 'PENDING',
+      branchId: activeBranch,
+    };
+
+    try {
+      if (editingStudent) {
+        // Edit mode
+        await api.patch(`/students/${editingStudent.id}`, {
+          name,
+          email,
+          phone,
+          status: payload.status,
+        });
+      } else {
+        // Add mode
+        await api.post('/students', payload);
+      }
+      setIsModalOpen(false);
+      fetchStudents();
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Error al guardar el estudiante');
     }
-    setIsModalOpen(false);
   };
 
   const filteredStudents = students.filter(s => 
@@ -161,61 +188,71 @@ export default function StudentsList() {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {filteredStudents.map((student) => (
-                <tr key={student.id} className="gsap-student-row border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors group">
-                  <td className="py-4 px-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-indigo-500/30 text-indigo-300 font-bold text-xs">
-                        {student.name.charAt(0)}
-                      </div>
-                      <span className="font-medium text-gray-200">{student.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="flex flex-col">
-                      <span className="text-gray-300">{student.email}</span>
-                      <span className="text-xs text-gray-500">{student.phone}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      student.status === 'Activo' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-                      student.status === 'Inactivo' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                      'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                    }`}>
-                      {student.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="text-gray-400 font-medium">{student.courses} cursos</span>
-                  </td>
-                  <td className="py-4 px-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => handleOpenEditModal(student)}
-                        className="p-1.5 text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(student.id)}
-                        className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                      <button className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-6 h-6 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin" />
+                      <span>Cargando estudiantes...</span>
                     </div>
                   </td>
                 </tr>
-              ))}
-              {filteredStudents.length === 0 && (
+              ) : filteredStudents.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-gray-500">
                     No se encontraron estudiantes.
                   </td>
                 </tr>
+              ) : (
+                filteredStudents.map((student) => (
+                  <tr key={student.id} className="gsap-student-row border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors group">
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-indigo-500/30 text-indigo-300 font-bold text-xs">
+                          {student.name.charAt(0)}
+                        </div>
+                        <span className="font-medium text-gray-200">{student.name.toUpperCase()}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex flex-col">
+                        <span className="text-gray-300">{student.email.toLowerCase()}</span>
+                        <span className="text-xs text-gray-500">{student.phone}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        student.status === 'Activo' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                        student.status === 'Inactivo' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                        'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      }`}>
+                        {student.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="text-gray-400 font-medium">{student.courses} cursos</span>
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleOpenEditModal(student)}
+                          className="p-1.5 text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(student.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                        <button className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -244,7 +281,7 @@ export default function StudentsList() {
                   type="text" 
                   required
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => setName(e.target.value.toUpperCase())}
                   placeholder="Ej. Juan Pérez"
                   className="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500/50"
                 />
@@ -256,7 +293,7 @@ export default function StudentsList() {
                   type="email" 
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value.toLowerCase())}
                   placeholder="ejemplo@email.com"
                   className="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500/50"
                 />

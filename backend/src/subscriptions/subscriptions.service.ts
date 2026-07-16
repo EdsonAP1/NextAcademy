@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -26,7 +30,9 @@ export class SubscriptionsService {
     });
 
     if (!subscription) {
-      throw new NotFoundException('No se encontró una suscripción activa para este instituto');
+      throw new NotFoundException(
+        'No se encontró una suscripción activa para este instituto',
+      );
     }
 
     return subscription;
@@ -38,7 +44,9 @@ export class SubscriptionsService {
     });
 
     if (!plan) {
-      throw new NotFoundException('El plan de suscripción especificado no existe');
+      throw new NotFoundException(
+        'El plan de suscripción especificado no existe',
+      );
     }
 
     // Cancelar cualquier suscripción activa anterior y crear una nueva

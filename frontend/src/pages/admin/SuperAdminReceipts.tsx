@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, X as RejectIcon, Calendar, Clock, CreditCard, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Check, X as RejectIcon, Clock, CreditCard } from 'lucide-react';
 import api from '../../shared/api';
 import gsap from 'gsap';
 
@@ -14,14 +14,22 @@ interface Receipt {
 
 export default function SuperAdminReceipts() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
-  const [refreshKey, setRefreshKey] = useState(0); // to force re-render timeago
+  const [, setRefreshKey] = useState(0); // to force re-render timeago
 
   const loadReceipts = () => {
-    const saved = localStorage.getItem('saas_receipts');
-    if (saved) {
-      setReceipts(JSON.parse(saved));
-    } else {
-      // Load mock receipt for display if empty
+    try {
+      const saved = localStorage.getItem('saas_receipts');
+      if (saved && saved !== 'undefined' && saved !== 'null') {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setReceipts(parsed);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading receipts', e);
+    }
+    // Load mock receipt for display if empty
       const mockReceipts: Receipt[] = [
         {
           id: 'mock-1',
@@ -34,7 +42,6 @@ export default function SuperAdminReceipts() {
       ];
       localStorage.setItem('saas_receipts', JSON.stringify(mockReceipts));
       setReceipts(mockReceipts);
-    }
   };
 
   useEffect(() => {

@@ -14,7 +14,8 @@ import {
   Menu,
   ShieldAlert,
   CheckCircle2,
-  CreditCard
+  CreditCard,
+  GitBranch
 } from 'lucide-react';
 import api from '../shared/api';
 
@@ -58,6 +59,7 @@ export default function DashboardLayout() {
         setProfile(response.data);
       } catch (err) {
         console.error('Error cargando perfil', err);
+        localStorage.removeItem('user');
         navigate('/login');
       } finally {
         setLoading(false);
@@ -76,7 +78,7 @@ export default function DashboardLayout() {
     }
   };
 
-  if (loading) {
+  if (loading || !profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#030712]">
         <div className="flex flex-col items-center">
@@ -90,8 +92,18 @@ export default function DashboardLayout() {
   const isSuperAdmin = profile?.role === 'SUPER_ADMIN';
 
   // Subscription gating check
-  const savedTenants = localStorage.getItem('saas_tenants');
-  const tenantsList = savedTenants ? JSON.parse(savedTenants) : [];
+  const tenantsList = (() => {
+    try {
+      const saved = localStorage.getItem('saas_tenants');
+      if (saved && saved !== 'undefined' && saved !== 'null') {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Error parsing saas_tenants', e);
+    }
+    return [];
+  })();
   const currentTenantSlug = profile?.tenant?.slug || 'oxford';
   const activeTenantData = tenantsList.find((t: any) => t.id === currentTenantSlug);
 
@@ -102,8 +114,15 @@ export default function DashboardLayout() {
   if (!isSuperAdmin && !isSubActive) {
     const paymentQrUrl = localStorage.getItem('saas_qr_url') || 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=PagoSaaSNextAcademy';
     const paymentAccounts = (() => {
-      const saved = localStorage.getItem('saas_bank_accounts');
-      if (saved) return JSON.parse(saved);
+      try {
+        const saved = localStorage.getItem('saas_bank_accounts');
+        if (saved && saved !== 'undefined' && saved !== 'null') {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {
+        console.error('Error parsing saas_bank_accounts', e);
+      }
       return [
         { id: '1', bankName: 'Banco Nacional de Bolivia (BNB)', accountNumber: '100-2938481', ownerName: 'NextAcademy SRL', nitCi: '3029482029' },
         { id: '2', bankName: 'Banco Mercantil Santa Cruz', accountNumber: '401-29481920', ownerName: 'NextAcademy SRL', nitCi: '3029482029' },
@@ -180,8 +199,18 @@ export default function DashboardLayout() {
                       status: 'PENDIENTE'
                     };
 
-                    const saved = localStorage.getItem('saas_receipts');
-                    const list = saved ? JSON.parse(saved) : [];
+                    const list = (() => {
+                      try {
+                        const saved = localStorage.getItem('saas_receipts');
+                        if (saved && saved !== 'undefined' && saved !== 'null') {
+                          const parsed = JSON.parse(saved);
+                          if (Array.isArray(parsed)) return parsed;
+                        }
+                      } catch (e) {
+                        console.error('Error parsing saas_receipts', e);
+                      }
+                      return [];
+                    })();
                     list.unshift(newReceipt);
                     localStorage.setItem('saas_receipts', JSON.stringify(list));
 
@@ -238,7 +267,9 @@ export default function DashboardLayout() {
         { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
         { name: 'Estudiantes', path: '/dashboard/students', icon: Users },
         { name: 'Cursos', path: '/dashboard/courses', icon: BookOpen },
-        { name: 'Caja y Pagos', path: '/dashboard/finance', icon: Wallet },
+        { name: 'Inscripciones y Pagos', path: '/dashboard/finance/payments', icon: CreditCard },
+        { name: 'Caja Diaria', path: '/dashboard/finance', icon: Wallet },
+        { name: 'Sucursales', path: '/dashboard/branches', icon: GitBranch },
         { name: 'Configuración', path: '/dashboard/settings', icon: Settings },
       ];
 
@@ -330,12 +361,34 @@ export default function DashboardLayout() {
               <h2 className="text-sm font-bold text-white hidden sm:block">
                 {isSuperAdmin ? 'Administración General SaaS' : (profile?.tenant?.name || 'Administración SaaS')}
               </h2>
-              {/* Aquí luego irá un Dropdown de Sucursales */}
-              {!isSuperAdmin && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 border border-gray-700 text-gray-400 inline-block mt-0.5">
-                  Sucursal Principal
-                </span>
-              )}
+              {!isSuperAdmin && (() => {
+                const tenantSlug = profile?.tenant?.slug || 'oxford';
+                const dynamicBranches: { id: string; name: string }[] = (() => {
+                  try {
+                    const saved = localStorage.getItem(`${tenantSlug}_branch_ids`);
+                    if (saved && saved !== 'undefined' && saved !== 'null') {
+                      const parsed = JSON.parse(saved);
+                      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                    }
+                  } catch (e) { /* ignore */ }
+                  // Fallback: single principal branch
+                  return [{ id: 'principal', name: 'Sucursal Principal' }];
+                })();
+                return (
+                  <select
+                    value={localStorage.getItem(`${tenantSlug}_academy_active_branch`) || 'principal'}
+                    onChange={(e) => {
+                      localStorage.setItem(`${tenantSlug}_academy_active_branch`, e.target.value);
+                      window.location.reload();
+                    }}
+                    className="text-[11px] px-2 py-1.5 rounded-xl bg-gray-900 border border-gray-800 text-gray-300 outline-none focus:border-indigo-500/50 mt-1 cursor-pointer font-semibold"
+                  >
+                    {dynamicBranches.map(b => (
+                      <option key={b.id} value={b.id} className="bg-gray-950 text-white">{b.name}</option>
+                    ))}
+                  </select>
+                );
+              })()}
             </div>
           </div>
 

@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useOutletContext, Navigate } from 'react-router-dom';
-import { CheckCircle2, ShieldAlert, Sparkles, CreditCard, RefreshCw, Calendar, Users, TrendingUp } from 'lucide-react';
-import api from '../shared/api';
+import { ShieldAlert, Sparkles, CreditCard, Calendar, Users, TrendingUp } from 'lucide-react';
 import gsap from 'gsap';
 
 interface UserProfile {
@@ -17,50 +16,19 @@ export default function Overview() {
   const { profile } = useOutletContext<{ profile: UserProfile }>();
   const isSuperAdmin = profile?.role === 'SUPER_ADMIN';
 
-  if (isSuperAdmin) {
-    return <Navigate to="/dashboard/admin/subscriptions" replace />;
-  }
-
-  const [plans, setPlans] = useState<any[]>([]);
-  const [changingPlan, setChangingPlan] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
+  // Plans fetch removed since unused
   useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const response = await api.get('/subscriptions/plans');
-        setPlans(response.data);
-      } catch (err) {
-        console.error('Error cargando planes', err);
-      }
-    };
-    fetchPlans();
-  }, []);
-
-  useEffect(() => {
+    if (isSuperAdmin) return;
     gsap.fromTo(
       '.gsap-dash-card',
       { opacity: 0, scale: 0.95 },
       { opacity: 1, scale: 1, duration: 0.6, stagger: 0.1, ease: 'power2.out' }
     );
-  }, []);
+  }, [isSuperAdmin]);
 
-  const handleChangePlan = async (planId: string) => {
-    setChangingPlan(true);
-    setError('');
-    setSuccess('');
-    try {
-      const response = await api.post('/subscriptions/change', { planId });
-      setSuccess(`¡Suscripción actualizada al ${response.data.plan.name} con éxito!`);
-      // Refrescar página para recargar contexto
-      window.location.reload();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al cambiar plan');
-    } finally {
-      setChangingPlan(false);
-    }
-  };
+  if (isSuperAdmin) {
+    return <Navigate to="/dashboard/admin/subscriptions" replace />;
+  }
 
   const subscription = profile?.tenant?.subscription;
   const isDemo = profile?.tenant?.slug === 'oxford';
@@ -119,19 +87,6 @@ export default function Overview() {
           </div>
         </div>
       </div>
-
-      {error && (
-        <div className="mb-6 p-4 rounded-2xl bg-red-950/30 border border-red-500/30 text-red-200 text-sm font-medium animate-float">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-6 p-4 rounded-2xl bg-green-950/30 border border-green-500/30 text-green-200 text-sm font-medium flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5 text-green-400" />
-          {success}
-        </div>
-      )}
 
       {/* Panel de Suscripción */}
       <div className="grid md:grid-cols-3 gap-8 mb-12">

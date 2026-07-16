@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { School, Mail, Lock, User, Sparkles, LogIn, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { School, Mail, Lock, User, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
 import api from '../shared/api';
 import gsap from 'gsap';
 
@@ -216,7 +216,7 @@ export default function Login() {
                     type="email"
                     required
                     value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    onChange={(e) => setLoginEmail(e.target.value.toLowerCase())}
                     className="w-full pl-10 py-3 pr-4 glass-input text-sm"
                     placeholder="ejemplo@instituto.edu"
                   />
@@ -262,7 +262,7 @@ export default function Login() {
                     type="text"
                     required
                     value={tenantName}
-                    onChange={(e) => setTenantName(e.target.value)}
+                    onChange={(e) => setTenantName(e.target.value.toUpperCase())}
                     className="w-full pl-10 py-3 pr-4 glass-input text-sm"
                     placeholder="Ej. Instituto Oxford"
                   />
@@ -279,7 +279,7 @@ export default function Login() {
                     type="text"
                     required
                     value={ownerName}
-                    onChange={(e) => setOwnerName(e.target.value)}
+                    onChange={(e) => setOwnerName(e.target.value.toUpperCase())}
                     className="w-full pl-10 py-3 pr-4 glass-input text-sm"
                     placeholder="Ej. Juan Pérez"
                   />
@@ -296,7 +296,7 @@ export default function Login() {
                     type="email"
                     required
                     value={registerEmail}
-                    onChange={(e) => setRegisterEmail(e.target.value)}
+                    onChange={(e) => setRegisterEmail(e.target.value.toLowerCase())}
                     className="w-full pl-10 py-3 pr-4 glass-input text-sm"
                     placeholder="admin@oxford.edu"
                   />

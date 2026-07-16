@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -10,14 +8,22 @@ datasource db {
 }
 
 model Tenant {
-  id            String         @id @default(uuid())
+  id            String             @id @default(uuid())
   name          String
-  slug          String         @unique
-  status        String         @default("ACTIVE") // ACTIVE, SUSPENDED
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  slug          String             @unique
+  status        String             @default("ACTIVE") // ACTIVE, SUSPENDED
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   users         User[]
   subscriptions Subscription[]
+  branches      Branch[]
+  classrooms    Classroom[]
+  courses       Course[]
+  students      Student[]
+  enrollments   Enrollment[]
+  payments      Payment[]
+  schedules     Schedule[]
+  transactions  CashTransaction[]
 
   @@map("tenants")
 }
@@ -34,6 +40,7 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  @@index([tenantId])
   @@map("users")
 }
 
@@ -63,4 +70,157 @@ model Subscription {
   updatedAt DateTime @updatedAt
 
   @@map("subscriptions")
+}
+
+model Branch {
+  id           String            @id @default(uuid())
+  name         String
+  address      String?
+  phone        String?
+  tenantId     String
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  classrooms   Classroom[]
+  courses      Course[]
+  students     Student[]
+  transactions CashTransaction[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([tenantId])
+  @@map("branches")
+}
+
+model Classroom {
+  id        String     @id @default(uuid())
+  name      String
+  capacity  Int
+  branchId  String?
+  branch    Branch?    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  schedules Schedule[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@map("classrooms")
+}
+
+model Course {
+  id          String       @id @default(uuid())
+  name        String
+  teacher     String
+  capacity    Int
+  price       Float
+  status      String       @default("ACTIVE") // ACTIVE, FULL, ARCHIVED
+  branchId    String?
+  branch      Branch?      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enrollments Enrollment[]
+  schedules   Schedule[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@map("courses")
+}
+
+model Student {
+  id          String       @id @default(uuid())
+  name        String
+  email       String
+  phone       String
+  status      String       @default("ACTIVE") // ACTIVE, INACTIVE, PENDING
+  branchId    String?
+  branch      Branch?      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enrollments Enrollment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@map("students")
+}
+
+model Enrollment {
+  id        String    @id @default(uuid())
+  studentId String
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status    String    @default("CONFIRMED") // CONFIRMED, CANCELED
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments  Payment[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([courseId])
+  @@map("enrollments")
+}
+
+model Payment {
+  id            String     @id @default(uuid())
+  enrollmentId  String
+  enrollment    Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  amount        Float
+  paymentMethod String     // CASH, QR, TRANSFER
+  invoiceNumber String
+  cuf           String?
+  nit           String?
+  razonSocial   String?
+  controlCode   String?
+  tenantId      String
+  tenant        Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt     DateTime   @default(now())
+
+  @@index([tenantId])
+  @@index([enrollmentId])
+  @@map("payments")
+}
+
+model Schedule {
+  id          String    @id @default(uuid())
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  dayOfWeek   String    // Lun, Mar, Mie, Jue, Vie, Sab, Dom
+  startTime   String    // e.g. "15:00"
+  endTime     String    // e.g. "16:30"
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([courseId])
+  @@index([classroomId])
+  @@map("schedules")
+}
+
+model CashTransaction {
+  id         String   @id @default(uuid())
+  type       String   // income, expense
+  concept    String
+  amount     Float
+  method     String   // Efectivo, QR, Transferencia
+  date       String   // YYYY-MM-DD
+  isCanceled Boolean  @default(false)
+  branchId   String
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@index([date])
+  @@map("cash_transactions")
 }

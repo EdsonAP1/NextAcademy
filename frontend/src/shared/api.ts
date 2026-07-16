@@ -14,6 +14,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       // Evitar bucle infinito si ya estamos en la página de login
+      localStorage.removeItem('user');
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }

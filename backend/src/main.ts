@@ -11,7 +11,7 @@ async function bootstrap() {
 
   // Configuración de CORS estricto para cookies cruzadas
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: true, // Reflejar dinámicamente el origen en desarrollo para evitar bloqueos por puertos cambiantes (5173/5174)
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

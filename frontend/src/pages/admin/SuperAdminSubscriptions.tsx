@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Calendar, Plus, Edit, Trash2, ShieldAlert, CheckCircle2, X } from 'lucide-react';
+import { Users, Calendar, Plus, Edit, Trash2, X } from 'lucide-react';
 import api from '../../shared/api';
 import gsap from 'gsap';
 
@@ -239,9 +239,9 @@ export default function SuperAdminSubscriptions() {
                     <tr key={t.id} className="gsap-admin-row border-b border-gray-800/50 hover:bg-gray-800/10 transition-colors group">
                       <td className="py-4 px-4">
                         <div className="flex flex-col">
-                          <span className="font-bold text-gray-200">{t.name}</span>
+                          <span className="font-bold text-gray-200">{t.name.toUpperCase()}</span>
                           <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mt-0.5">
-                            <span>{t.ownerName} ({t.ownerEmail})</span>
+                            <span>{t.ownerName.toUpperCase()} ({t.ownerEmail.toLowerCase()})</span>
                             <span className="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-800 text-[10px] text-indigo-400 font-mono">
                               Pass: {t.ownerPassword}
                             </span>
@@ -373,7 +373,7 @@ export default function SuperAdminSubscriptions() {
                   required
                   disabled={!!editingTenant}
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => setName(e.target.value.toUpperCase())}
                   placeholder="Ej. Instituto Cambridge"
                   className="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
@@ -385,7 +385,7 @@ export default function SuperAdminSubscriptions() {
                   type="text" 
                   required
                   value={ownerName}
-                  onChange={(e) => setOwnerName(e.target.value)}
+                  onChange={(e) => setOwnerName(e.target.value.toUpperCase())}
                   placeholder="Ej. Juan Pérez"
                   className="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500/50"
                 />
@@ -398,7 +398,7 @@ export default function SuperAdminSubscriptions() {
                     type="email" 
                     required
                     value={ownerEmail}
-                    onChange={(e) => setOwnerEmail(e.target.value)}
+                    onChange={(e) => setOwnerEmail(e.target.value.toLowerCase())}
                     placeholder="propietario@email.com"
                     className="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500/50"
                   />

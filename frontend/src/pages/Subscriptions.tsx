@@ -93,8 +93,48 @@ const OrbitBackground = () => (
 
 export default function Subscriptions() {
   const navigate = useNavigate();
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [plans, setPlans] = useState<Plan[]>([
+    {
+      id: 'plan-basic-seed',
+      name: 'Plan Básico',
+      price: 199,
+      billingCycle: 'MONTHLY',
+      features: {
+        students: 150,
+        courses: 3,
+        users: 2,
+        branches: 1,
+        modules: ['alumnos', 'cursos', 'pagos', 'caja']
+      }
+    },
+    {
+      id: 'plan-pro-seed',
+      name: 'Plan Profesional',
+      price: 399,
+      billingCycle: 'MONTHLY',
+      features: {
+        students: 1000,
+        courses: 10,
+        users: 8,
+        branches: 2,
+        modules: ['alumnos', 'cursos', 'pagos', 'caja', 'estadisticas', 'ajustes', 'reportes']
+      }
+    },
+    {
+      id: 'plan-elite-seed',
+      name: 'Plan Élite',
+      price: 599,
+      billingCycle: 'MONTHLY',
+      features: {
+        students: -1,
+        courses: -1,
+        users: -1,
+        branches: -1,
+        modules: ['alumnos', 'cursos', 'pagos', 'caja', 'estadisticas', 'ajustes', 'reportes', 'auditoria', 'superadmin']
+      }
+    }
+  ]);
+  const loading = false;
   
   const containerRef = useRef<HTMLDivElement>(null);
   const heroMockupRef = useRef<HTMLDivElement>(null);
@@ -104,16 +144,16 @@ export default function Subscriptions() {
   const caseMockupRef = useRef<HTMLDivElement>(null);
   const caseMockupWrapperRef = useRef<HTMLDivElement>(null);
 
-  // Cargar planes
+  // Cargar/Sincronizar planes en segundo plano
   useEffect(() => {
     const fetchPlans = async () => {
       try {
         const response = await api.get('/subscriptions/plans');
-        setPlans(response.data);
+        if (response.data && response.data.length > 0) {
+          setPlans(response.data);
+        }
       } catch (err) {
         console.error('Error cargando planes', err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchPlans();
