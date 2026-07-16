@@ -46,6 +46,7 @@ export default function DashboardLayout() {
   const location = useLocation();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -53,19 +54,37 @@ export default function DashboardLayout() {
   const [receiptNumber, setReceiptNumber] = useState('');
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndBranches = async () => {
       try {
         const response = await api.get('/auth/me');
-        setProfile(response.data);
+        const userProfile = response.data;
+        setProfile(userProfile);
+
+        if (userProfile.role !== 'SUPER_ADMIN') {
+          const tenantSlug = userProfile.tenant?.slug || 'oxford';
+          const branchesRes = await api.get('/branches');
+          const branchesData = branchesRes.data.map((b: any) => ({ id: b.id, name: b.name }));
+          setBranches(branchesData);
+          localStorage.setItem(`${tenantSlug}_branch_ids`, JSON.stringify(branchesData));
+
+          // Validar activeBranch en localStorage
+          const activeBranch = localStorage.getItem(`${tenantSlug}_academy_active_branch`);
+          if (branchesData.length > 0) {
+            const exists = branchesData.some((b: any) => b.id === activeBranch);
+            if (!activeBranch || activeBranch === 'principal' || !exists) {
+              localStorage.setItem(`${tenantSlug}_academy_active_branch`, branchesData[0].id);
+            }
+          }
+        }
       } catch (err) {
-        console.error('Error cargando perfil', err);
+        console.error('Error cargando perfil o sucursales', err);
         localStorage.removeItem('user');
         navigate('/login');
       } finally {
         setLoading(false);
       }
     };
-    fetchProfile();
+    fetchProfileAndBranches();
   }, [navigate]);
 
   const handleLogout = async () => {
@@ -363,7 +382,7 @@ export default function DashboardLayout() {
               </h2>
               {!isSuperAdmin && (() => {
                 const tenantSlug = profile?.tenant?.slug || 'oxford';
-                const dynamicBranches: { id: string; name: string }[] = (() => {
+                const dynamicBranches = branches.length > 0 ? branches : (() => {
                   try {
                     const saved = localStorage.getItem(`${tenantSlug}_branch_ids`);
                     if (saved && saved !== 'undefined' && saved !== 'null') {

@@ -123,6 +123,14 @@ export class AuthService {
         },
       });
 
+      // Crear Sucursal por defecto
+      await tx.branch.create({
+        data: {
+          name: 'SUCURSAL PRINCIPAL',
+          tenantId: tenant.id,
+        },
+      });
+
       // Crear Owner
       const hashedPassword = await bcrypt.hash(pass, 10);
       const user = await tx.user.create({
@@ -356,6 +364,14 @@ export class AuthService {
     return this.prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
         data: { name: data.name, slug },
+      });
+
+      // Crear Sucursal por defecto
+      await tx.branch.create({
+        data: {
+          name: 'SUCURSAL PRINCIPAL',
+          tenantId: tenant.id,
+        },
       });
 
       const hashedPassword = await bcrypt.hash(data.pass, 10);
